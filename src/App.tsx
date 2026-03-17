@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NotesStoreProvider } from './hooks/useNotesStoreProvider';
-import { useNotesStore } from './hooks/useNotesStoreProvider';
+import { NotesStoreProvider, useNotesStore } from './hooks/useNotesStoreProvider';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import TimelineView from './components/TimelineView';
@@ -12,12 +11,11 @@ import EventModal from './components/EventModal';
 import NoteModal from './components/NoteModal';
 
 function AppContent() {
-  const { currentView, setCurrentView } = useNotesStore();
+  const { currentView } = useNotesStore();
   const [showEventModal, setShowEventModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
-  // Écouter les événements personnalisés pour ouvrir les modals
   useEffect(() => {
     const handleOpenEventModal = () => {
       setSelectedTime(null);
@@ -42,6 +40,7 @@ function AppContent() {
     };
   }, []);
 
+  // Cette fonction détermine quel écran afficher
   const renderCurrentView = () => {
     switch (currentView) {
       case 'timeline':
@@ -60,17 +59,21 @@ function AppContent() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50">
-      {/* Sidebar */}
+    <div className="h-screen flex bg-gray-50 overflow-hidden">
+      {/* Sidebar gauche */}
       <Sidebar />
       
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        <Header currentView={currentView} setCurrentView={setCurrentView} />
-        {renderCurrentView()}
+      {/* Zone de droite (Header + Contenu variable) */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Header />
+        
+        {/* C'est ICI qu'on affiche le contenu qui avait disparu */}
+        <main className="flex-1 overflow-y-auto">
+          {renderCurrentView()}
+        </main>
       </div>
 
-      {/* Modals */}
+      {/* Modals de création */}
       {showEventModal && (
         <EventModal
           onClose={() => {
@@ -90,12 +93,11 @@ function AppContent() {
   );
 }
 
-function App() {
+// Composant racine avec le Provider
+export default function App() {
   return (
     <NotesStoreProvider>
       <AppContent />
     </NotesStoreProvider>
   );
 }
-
-export default App;
