@@ -1,0 +1,1 @@
+npm install -D vite-plugin-pwa
