@@ -16,6 +16,7 @@ function AppContent() {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
+  // Gestion des événements globaux pour ouvrir les fenêtres surgissantes (Modals)
   useEffect(() => {
     const handleOpenEventModal = () => {
       setSelectedTime(null);
@@ -40,7 +41,7 @@ function AppContent() {
     };
   }, []);
 
-  // Cette fonction détermine quel écran afficher
+  // Sélection de la vue à afficher
   const renderCurrentView = () => {
     switch (currentView) {
       case 'timeline':
@@ -59,21 +60,27 @@ function AppContent() {
   };
 
   return (
-    <div className="h-screen flex bg-gray-50 overflow-hidden">
-      {/* Sidebar gauche */}
-      <Sidebar />
+    // h-[100dvh] est crucial pour que l'app occupe tout l'écran de l'iPhone sans glisser sous la barre Safari
+    <div className="h-[100dvh] w-full flex bg-gray-50 overflow-hidden">
       
-      {/* Zone de droite (Header + Contenu variable) */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* SIDEBAR : Cachée sur mobile (hidden), affichée sur tablette/PC (md:flex) */}
+      <aside className="hidden md:flex md:w-64 flex-col border-r bg-white flex-shrink-0">
+        <Sidebar />
+      </aside>
+      
+      {/* ZONE PRINCIPALE */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         <Header />
         
-        {/* C'est ICI qu'on affiche le contenu qui avait disparu */}
-        <main className="flex-1 overflow-y-auto">
-          {renderCurrentView()}
+        {/* Zone de contenu qui défile */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-2 sm:p-4">
+          <div className="max-w-full mx-auto h-full">
+            {renderCurrentView()}
+          </div>
         </main>
       </div>
 
-      {/* Modals de création */}
+      {/* MODALS (Fenêtres de création) */}
       {showEventModal && (
         <EventModal
           onClose={() => {
@@ -85,15 +92,13 @@ function AppContent() {
       )}
       
       {showNoteModal && (
-        <NoteModal
-          onClose={() => setShowNoteModal(false)}
-        />
+        <NoteModal onClose={() => setShowNoteModal(false)} />
       )}
     </div>
   );
 }
 
-// Composant racine avec le Provider
+// Composant racine avec le Store
 export default function App() {
   return (
     <NotesStoreProvider>
