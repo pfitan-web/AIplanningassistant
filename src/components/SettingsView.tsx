@@ -1,56 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNotesStore } from '../hooks/useNotesStoreProvider';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Check, Save } from 'lucide-react';
+import { Check, Save, X, Trash2 } from 'lucide-react';
 
 export default function SettingsView() {
-  const { settings, updateSettings } = useNotesStore();
+  const { settings, updateSettings, setItems } = useNotesStore();
   
   // État local pour le formulaire
   const [formData, setFormData] = useState({ ...settings });
+  const [isDirty, setIsDirty] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
+  // Vérifier si des changements ont été faits par rapport aux réglages originaux
+  useEffect(() => {
+    const hasChanged = JSON.stringify(formData) !== JSON.stringify(settings);
+    setIsDirty(hasChanged);
+  }, [formData, settings]);
+
   const handleSave = () => {
-    // Mise à jour du store global
     updateSettings(formData);
-    
-    // Effet visuel
     setIsSaved(true);
+    setIsDirty(false);
     setTimeout(() => setIsSaved(false), 2000);
-    
-    // Vibration sur mobile si disponible
-    if (window.navigator.vibrate) {
-      window.navigator.vibrate(50);
+    if (window.navigator.vibrate) window.navigator.vibrate(50);
+  };
+
+  const handleCancel = () => {
+    setFormData({ ...settings }); // On réinitialise l'état local avec les valeurs du store
+  };
+
+  const handleClearData = () => {
+    if (window.confirm("Voulez-vous vraiment supprimer toutes vos données ? Cette action est irréversible.")) {
+      setItems([]);
+      localStorage.removeItem('harmony-storage');
+      window.location.reload();
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-20 p-4">
+    <div className="max-w-2xl mx-auto space-y-6 pb-24 p-4">
       <Card>
         <CardHeader>
           <CardTitle>Configuration de l'Assistant</CardTitle>
-          {/* Remplacement de CardDescription par une simple balise p */}
           <p className="text-sm text-gray-500">Personnalisez votre expérience Harmony</p>
         </CardHeader>
         <CardContent className="space-y-6">
           
-          {/* Champ Nom d'utilisateur */}
+          {/* Nom d'utilisateur */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Nom d'utilisateur</label>
+            <label className="text-sm font-medium text-gray-700">Nom d'utilisateur</label>
             <input 
               type="text" 
-              className="w-full p-3 border rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-orange-500 outline-none"
-              placeholder="Votre nom..."
+              className="w-full p-3 border rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
               value={formData.userName || ''}
               onChange={(e) => setFormData({...formData, userName: e.target.value})}
             />
           </div>
 
-          {/* Option Notifications */}
+          {/* Notifications */}
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
             <div>
-              <p className="font-semibold text-gray-900">Notifications</p>
+              <p className="font-semibold text-gray-900 text-sm sm:text-base">Notifications</p>
               <p className="text-xs text-gray-500">Activer les rappels système</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -64,26 +75,46 @@ export default function SettingsView() {
             </label>
           </div>
 
-          {/* Bouton Enregistrer */}
-          <Button 
-            onClick={handleSave} 
-            className={`w-full h-14 text-lg font-bold transition-all shadow-lg active:scale-95 ${
-              isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-orange-500 hover:bg-orange-600 text-white'
-            }`}
-          >
-            {isSaved ? (
-              <span className="flex items-center"><Check className="mr-2 h-6 w-6" /> Enregistré !</span>
-            ) : (
-              <span className="flex items-center"><Save className="mr-2 h-6 w-6" /> Enregistrer</span>
-            )}
-          </Button>
-
+          {/* Option : Réinitialisation (que nous gardons comme discuté) */}
+          <div className="pt-4">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start text-red-500 border-red-100 hover:bg-red-50"
+              onClick={handleClearData}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Réinitialiser toutes les données
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <div className="text-center text-xs text-gray-400 mt-8">
-        Harmony Notes v1.0.0 — PWA Mode
-      </div>
+      {/* BARRE DE BOUTONS FLOTTANTE : Apparaît uniquement si modif (isDirty) */}
+      {(isDirty || isSaved) && (
+        <div className="fixed bottom-6 left-4 right-4 flex gap-3 animate-in slide-in-from-bottom-4 duration-300">
+          <Button 
+            variant="outline" 
+            onClick={handleCancel}
+            className="flex-1 h-12 bg-white border-gray-200 text-gray-700 shadow-lg"
+            disabled={isSaved}
+          >
+            <X className="mr-2 h-4 w-4" /> Annuler
+          </Button>
+          
+          <Button 
+            onClick={handleSave} 
+            className={`flex-[2] h-12 font-bold shadow-lg transition-all ${
+              isSaved ? 'bg-green-600 text-white' : 'bg-orange-500 text-white hover:bg-orange-600'
+            }`}
+          >
+            {isSaved ? (
+              <span className="flex items-center justify-center"><Check className="mr-2 h-5 w-5" /> Enregistré !</span>
+            ) : (
+              <span className="flex items-center justify-center"><Save className="mr-2 h-5 w-5" /> Enregistrer</span>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
