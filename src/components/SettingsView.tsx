@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNotesStore } from '../hooks/useNotesStoreProvider';
 import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Check, Save, X, Trash2 } from 'lucide-react';
+import { 
+  User, Bell, Palette, Globe, Shield, HelpCircle, 
+  ChevronRight, Save, X, Trash2, Info 
+} from 'lucide-react';
 
 export default function SettingsView() {
   const { settings, updateSettings, setItems } = useNotesStore();
-  
-  // État local pour le formulaire
   const [formData, setFormData] = useState({ ...settings });
   const [isDirty, setIsDirty] = useState(false);
-  const [isSaved, setIsSaved] = useState(false);
 
-  // Vérifier si des changements ont été faits par rapport aux réglages originaux
   useEffect(() => {
     const hasChanged = JSON.stringify(formData) !== JSON.stringify(settings);
     setIsDirty(hasChanged);
@@ -20,98 +18,94 @@ export default function SettingsView() {
 
   const handleSave = () => {
     updateSettings(formData);
-    setIsSaved(true);
     setIsDirty(false);
-    setTimeout(() => setIsSaved(false), 2000);
     if (window.navigator.vibrate) window.navigator.vibrate(50);
   };
 
-  const handleCancel = () => {
-    setFormData({ ...settings }); // On réinitialise l'état local avec les valeurs du store
-  };
+  const handleCancel = () => setFormData({ ...settings });
 
-  const handleClearData = () => {
-    if (window.confirm("Voulez-vous vraiment supprimer toutes vos données ? Cette action est irréversible.")) {
-      setItems([]);
-      localStorage.removeItem('harmony-storage');
-      window.location.reload();
-    }
-  };
+  // Composant pour une ligne de menu style iOS
+  const MenuRow = ({ icon: Icon, color, title, value, type = "chevron", onChange }: any) => (
+    <div className="flex items-center justify-between py-3 px-4 active:bg-gray-100 transition-colors cursor-pointer">
+      <div className="flex items-center gap-3">
+        <div className={`p-1.5 rounded-md ${color} text-white`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-[15px] font-medium text-gray-800">{title}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        {type === "toggle" ? (
+          <input 
+            type="checkbox" 
+            className="h-5 w-5 accent-orange-500" 
+            checked={value} 
+            onChange={onChange}
+          />
+        ) : type === "input" ? (
+          <input 
+            type="text" 
+            className="text-right bg-transparent outline-none text-gray-500 text-sm" 
+            value={value} 
+            onChange={onChange}
+          />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-gray-300" />
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-24 p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuration de l'Assistant</CardTitle>
-          <p className="text-sm text-gray-500">Personnalisez votre expérience Harmony</p>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          
-          {/* Nom d'utilisateur */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Nom d'utilisateur</label>
-            <input 
-              type="text" 
-              className="w-full p-3 border rounded-lg bg-white shadow-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all"
-              value={formData.userName || ''}
-              onChange={(e) => setFormData({...formData, userName: e.target.value})}
-            />
-          </div>
+    <div className="flex flex-col h-full bg-[#F2F2F7] -m-2 sm:-m-4"> {/* Fond gris clair iOS */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        
+        {/* SECTION COMPTE */}
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+          <MenuRow 
+            icon={User} color="bg-blue-500" title="Nom d'utilisateur" 
+            type="input" value={formData.userName} 
+            onChange={(e: any) => setFormData({...formData, userName: e.target.value})}
+          />
+        </div>
 
-          {/* Notifications */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-            <div>
-              <p className="font-semibold text-gray-900 text-sm sm:text-base">Notifications</p>
-              <p className="text-xs text-gray-500">Activer les rappels système</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer"
-                checked={formData.notificationsEnabled}
-                onChange={(e) => setFormData({...formData, notificationsEnabled: e.target.checked})}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-            </label>
-          </div>
+        {/* SECTION RÉGLAGES GÉNÉRAUX */}
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-50">
+          <MenuRow 
+            icon={Bell} color="bg-red-500" title="Notifications" 
+            type="toggle" value={formData.notificationsEnabled}
+            onChange={(e: any) => setFormData({...formData, notificationsEnabled: e.target.checked})}
+          />
+          <MenuRow icon={Palette} color="bg-purple-500" title="Apparence" />
+          <MenuRow icon={Globe} color="bg-green-500" title="Langue" />
+        </div>
 
-          {/* Option : Réinitialisation (que nous gardons comme discuté) */}
-          <div className="pt-4">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start text-red-500 border-red-100 hover:bg-red-50"
-              onClick={handleClearData}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Réinitialiser toutes les données
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        {/* SECTION SÉCURITÉ & AIDE */}
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 divide-y divide-gray-50">
+          <MenuRow icon={Shield} color="bg-gray-400" title="Confidentialité" />
+          <MenuRow icon={HelpCircle} color="bg-orange-400" title="Aide & Support" />
+          <MenuRow icon={Info} color="bg-blue-400" title="À propos" />
+        </div>
 
-      {/* BARRE DE BOUTONS FLOTTANTE : Apparaît uniquement si modif (isDirty) */}
-      {(isDirty || isSaved) && (
-        <div className="fixed bottom-6 left-4 right-4 flex gap-3 animate-in slide-in-from-bottom-4 duration-300">
-          <Button 
-            variant="outline" 
-            onClick={handleCancel}
-            className="flex-1 h-12 bg-white border-gray-200 text-gray-700 shadow-lg"
-            disabled={isSaved}
+        {/* SECTION DANGER */}
+        <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+          <button 
+            onClick={() => { if(confirm("Tout effacer ?")) setItems([]); }}
+            className="w-full flex items-center gap-3 py-3 px-4 text-red-500 active:bg-red-50"
           >
+            <Trash2 className="h-4 w-4" />
+            <span className="text-[15px] font-medium">Réinitialiser les données</span>
+          </button>
+        </div>
+      </div>
+
+      {/* BARRE DE BOUTONS (Uniquement si modif) */}
+      {isDirty && (
+        <div className="p-4 bg-white/80 backdrop-blur-md border-t flex gap-3 animate-in slide-in-from-bottom-full">
+          <Button variant="outline" onClick={handleCancel} className="flex-1 h-11 rounded-xl">
             <X className="mr-2 h-4 w-4" /> Annuler
           </Button>
-          
-          <Button 
-            onClick={handleSave} 
-            className={`flex-[2] h-12 font-bold shadow-lg transition-all ${
-              isSaved ? 'bg-green-600 text-white' : 'bg-orange-500 text-white hover:bg-orange-600'
-            }`}
-          >
-            {isSaved ? (
-              <span className="flex items-center justify-center"><Check className="mr-2 h-5 w-5" /> Enregistré !</span>
-            ) : (
-              <span className="flex items-center justify-center"><Save className="mr-2 h-5 w-5" /> Enregistrer</span>
-            )}
+          <Button onClick={handleSave} className="flex-[2] h-11 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold">
+            <Save className="mr-2 h-4 w-4" /> Enregistrer
           </Button>
         </div>
       )}
