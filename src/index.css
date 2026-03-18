@@ -36,3 +36,27 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
 }
+
+/* Gestion du "Notch" iPhone */
+:root {
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+
+body {
+  padding-top: var(--sat);
+  padding-bottom: var(--sab);
+  overscroll-behavior-y: none; /* Évite l'effet élastique qui bugge sur PWA */
+}
+
+/* Scrollbar discrète pour le calendrier horizontal */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
