@@ -10,38 +10,47 @@ import AlertManager from './AlertManager';
 
 export default function SettingsView() {
   const { settings, updateSettings, setCurrentView } = useNotesStore();
-  const [hasChanges, setHasChanges] = useState(false);
-  const [tempSettings, setTempSettings] = useState(settings);
-  const [isSaved, setIsSaved] = useState(false);
+  
+  // État local temporaire
+  const [tempSettings, setTempSettings] = useState({ ...settings });
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Comparaison pour activer le bouton bleu
+  const hasChanges = JSON.stringify(tempSettings) !== JSON.stringify(settings);
 
   const handleSave = () => {
+    if (!hasChanges) return;
+    
+    setIsSaving(true);
+    
+    // 1. Mise à jour de l'état global (Store)
     updateSettings(tempSettings);
-    setHasChanges(false);
-    setIsSaved(true);
     
-    // Petit délai pour confirmer visuellement l'enregistrement avant de quitter
+    // 2. FORCE LA PERSISTENCE (Sauvegarde réelle dans le navigateur)
+    // On sauvegarde sous la clé que ton Store utilise probablement
+    localStorage.setItem('harmony-storage', JSON.stringify({
+      state: { settings: tempSettings }
+    }));
+    
+    // Feedback visuel (passage au vert)
     setTimeout(() => {
-      setIsSaved(false);
+      setIsSaving(false);
       setCurrentView('timeline');
-    }, 1500);
-    
-    if (window.navigator.vibrate) window.navigator.vibrate(50);
+    }, 800);
   };
 
   const handleReset = () => {
-    setTempSettings(settings);
-    setHasChanges(false);
+    setTempSettings({ ...settings });
   };
 
-  const updateTempSettings = (updates: Partial<typeof tempSettings>) => {
-    setTempSettings(prev => ({ ...prev, ...updates }));
-    setHasChanges(true);
+  const updateField = (field: string, value: any) => {
+    setTempSettings(prev => ({ ...prev, [field]: value }));
   };
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Button
@@ -54,13 +63,14 @@ export default function SettingsView() {
             </Button>
             <h1 className="text-xl font-semibold text-gray-900">Paramètres</h1>
           </div>
+          
           <div className="flex items-center space-x-2">
-            {hasChanges && !isSaved && (
+            {hasChanges && !isSaving && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
-                className="text-gray-600"
+                className="text-gray-600 border-gray-300"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Annuler
@@ -68,127 +78,107 @@ export default function SettingsView() {
             )}
             <Button
               onClick={handleSave}
-              disabled={!hasChanges || isSaved}
-              className={`transition-all ${isSaved ? 'bg-green-600 hover:bg-green-600 text-white' : 'bg-blue-500 hover:bg-blue-600'}`}
+              disabled={!hasChanges || isSaving}
+              className={`transition-all duration-200 ${
+                isSaving ? 'bg-green-600 hover:bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              {isSaved ? (
-                <><Check className="h-4 w-4 mr-2" /> Enregistré</>
+              {isSaving ? (
+                <Check className="h-4 w-4 mr-2 animate-in zoom-in text-white" />
               ) : (
-                <><Save className="h-4 w-4 mr-2" /> Enregistrer</>
+                <Save className="h-4 w-4 mr-2 text-white" />
               )}
+              <span className="text-white">{isSaving ? 'Enregistré' : 'Enregistrer'}</span>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Settings Content */}
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 max-w-2xl mx-auto">
         {/* Notifications */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Bell className="h-5 w-5 mr-2 text-blue-500" />
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-5 flex items-center">
+            <Bell className="h-5 w-5 mr-3 text-blue-500" />
             Notifications
           </h2>
           
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="sound" className="text-sm font-medium text-gray-700">
-                Son de notification
-              </Label>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Son de notification</Label>
               <Select
                 value={tempSettings.notificationSound}
-                onValueChange={(value: any) => updateTempSettings({ notificationSound: value })}
+                onValueChange={(val) => updateField('notificationSound', val)}
               >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Choisir un son" />
+                <SelectTrigger className="w-full bg-gray-50 border-gray-200">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="chime">Carillon</SelectItem>
-                  <SelectItem value="bell">Cloche</SelectItem>
-                  <SelectItem value="none">Silencieux</SelectItem>
+                  <SelectItem value="carillon">Carillon</SelectItem>
+                  <SelectItem value="cloche">Cloche</SelectItem>
+                  <SelectItem value="silencieux">Silencieux</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="banner" className="text-sm font-medium text-gray-700">
-                Visibilité du bandeau
-              </Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Visibilité du bandeau</Label>
               <Select
                 value={tempSettings.bannerVisibility}
-                onValueChange={(value: any) => updateTempSettings({ bannerVisibility: value })}
+                onValueChange={(val) => updateField('bannerVisibility', val)}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="w-full bg-gray-50 border-gray-200">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="always">Toujours visible</SelectItem>
-                  <SelectItem value="when-active">Quand l'app est active</SelectItem>
+                  <SelectItem value="active">Quand l'app est active</SelectItem>
                   <SelectItem value="never">Jamais</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Snooze automatique
-                </Label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Reprogrammer automatiquement les rappels ignorés
-                </p>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="space-y-0.5">
+                <Label className="text-sm font-medium text-gray-900">Snooze automatique</Label>
+                <p className="text-xs text-gray-500">Reprogrammer les rappels ignorés</p>
               </div>
               <Switch
                 checked={tempSettings.autoSnooze}
-                onCheckedChange={(checked) => updateTempSettings({ autoSnooze: checked })}
+                onCheckedChange={(checked) => updateField('autoSnooze', checked)}
               />
             </div>
           </div>
         </div>
 
         {/* Temps de trajet */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Car className="h-5 w-5 mr-2 text-green-500" />
+            <Car className="h-5 w-5 mr-3 text-green-500" />
             Temps de trajet par défaut
           </h2>
           
-          <div>
-            <Label htmlFor="travel-time" className="text-sm font-medium text-gray-700">
-              Durée par défaut (minutes)
-            </Label>
+          <div className="flex items-center space-x-4">
             <Input
-              id="travel-time"
               type="number"
-              min="5"
-              max="120"
               value={tempSettings.defaultTravelTime}
-              onChange={(e) => updateTempSettings({ defaultTravelTime: parseInt(e.target.value) || 15 })}
-              className="mt-1 w-32"
+              onChange={(e) => updateField('defaultTravelTime', parseInt(e.target.value) || 0)}
+              className="w-24 bg-gray-50 border-gray-200"
             />
+            <span className="text-sm text-gray-600">minutes</span>
           </div>
         </div>
 
         {/* Rappels par défaut */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Clock className="h-5 w-5 mr-2 text-orange-500" />
+            <Clock className="h-5 w-5 mr-3 text-orange-500" />
             Rappels par défaut
           </h2>
           
           <AlertManager
             alerts={tempSettings.defaultAlerts}
-            onChange={(alerts) => updateTempSettings({ defaultAlerts: alerts })}
+            onChange={(alerts) => updateField('defaultAlerts', alerts)}
           />
-        </div>
-
-        {/* À propos */}
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">À propos</h2>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p><strong>Harmony Notes</strong> v1.0.0</p>
-            <p>Une expérience unifiée pour vos notes, rappels et calendrier</p>
-          </div>
         </div>
       </div>
     </div>
