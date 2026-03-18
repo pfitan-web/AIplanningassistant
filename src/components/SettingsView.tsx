@@ -11,12 +11,10 @@ import {
 export default function SettingsView() {
   const { settings, updateSettings, setItems } = useNotesStore();
   
-  // État local pour le formulaire (copie des réglages actuels)
   const [formData, setFormData] = useState({ ...settings });
   const [isDirty, setIsDirty] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
 
-  // Détection des changements pour afficher la barre de boutons
   useEffect(() => {
     const hasChanged = JSON.stringify(formData) !== JSON.stringify(settings);
     setIsDirty(hasChanged);
@@ -55,7 +53,6 @@ export default function SettingsView() {
           <TabsTrigger value="account" className="rounded-lg">Compte</TabsTrigger>
         </TabsList>
 
-        {/* --- ONGLET GÉNÉRAL --- */}
         <TabsContent value="general" className="space-y-4">
           <Card className="border-none shadow-sm overflow-hidden rounded-2xl">
             <CardHeader className="pb-2">
@@ -89,7 +86,6 @@ export default function SettingsView() {
           </Card>
         </TabsContent>
 
-        {/* --- ONGLET APPARENCE --- */}
         <TabsContent value="appearance" className="space-y-4">
           <Card className="border-none shadow-sm rounded-2xl">
             <CardHeader>
@@ -106,4 +102,79 @@ export default function SettingsView() {
                 ].map((theme) => (
                   <button
                     key={theme.id}
-                    onClick={() => setFormData({...formData
+                    type="button"
+                    onClick={() => setFormData({...formData, theme: theme.id as any})}
+                    className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                      formData.theme === theme.id ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'
+                    }`}
+                  >
+                    <theme.icon className={`h-6 w-6 mb-2 ${formData.theme === theme.id ? 'text-orange-600' : 'text-gray-400'}`} />
+                    <span className="text-xs font-medium">{theme.label}</span>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account" className="space-y-4">
+          <Card className="border-none shadow-sm rounded-2xl">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <User className="h-5 w-5 text-blue-500" /> Profil
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase">Nom d'utilisateur</label>
+                <input 
+                  type="text" 
+                  className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-orange-500"
+                  value={formData.userName || ''}
+                  onChange={(e) => setFormData({...formData, userName: e.target.value})}
+                />
+              </div>
+              
+              <div className="pt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={handleClearData}
+                  className="w-full text-red-500 border-red-100 hover:bg-red-50 rounded-xl h-12"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Réinitialiser les données
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* BARRE DE BOUTONS FLOTTANTE */}
+      {(isDirty || isSaved) && (
+        <div className="fixed bottom-6 left-4 right-4 flex gap-3 animate-in slide-in-from-bottom-full duration-300 z-50">
+          <Button 
+            variant="outline" 
+            onClick={handleCancel}
+            className="flex-1 h-12 bg-white/90 backdrop-blur shadow-xl rounded-2xl border-gray-200"
+            disabled={isSaved}
+          >
+            <X className="mr-2 h-4 w-4" /> Annuler
+          </Button>
+          
+          <Button 
+            onClick={handleSave} 
+            className={`flex-[2] h-12 font-bold shadow-xl rounded-2xl transition-all ${
+              isSaved ? 'bg-green-600 text-white' : 'bg-orange-500 text-white'
+            }`}
+          >
+            {isSaved ? (
+              <span className="flex items-center"><Check className="mr-2 h-5 w-5" /> Enregistré</span>
+            ) : (
+              <span className="flex items-center"><Save className="mr-2 h-5 w-5" /> Enregistrer</span>
+            )}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
